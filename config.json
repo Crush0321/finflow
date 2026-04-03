@@ -1,0 +1,17 @@
+{
+  "dashscope": {
+    "api_key": "YOUR_DASHSCOPE_API_KEY",
+    "model": "qwen-turbo",
+    "base_url": "https://dashscope.aliyuncs.com/api/v1"
+  },
+  "wechat": {
+    "webhook_url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_WEBHOOK_KEY",
+    "mentioned_list": [],
+    "mentioned_mobile_list": []
+  },
+  "summary": {
+    "max_news": 20,
+    "max_length": 2000,
+    "style": "专业财经资讯风格，简洁清晰，突出重点"
+  }
+}

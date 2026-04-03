@@ -13,7 +13,9 @@ ENV/
 data/
 reports/
 *.csv
-*.json
+
+# Config with sensitive info (but config.json template is tracked)
+config.local.json
 
 # IDE
 .vscode/
