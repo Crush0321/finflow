@@ -36,16 +36,78 @@ def fetch(url, referer=""):
     return None
 
 
+def extract_time(soup, url):
+    """多策略提取发布时间"""
+    pub_time = ""
+    
+    # 策略1: 常用CSS选择器
+    time_selectors = [
+        '.time', '.date', '.pub-time', '.publish-time',
+        '.info-source .time', '.news-source', '.source',
+        '.post-time', '.article-time', '.release-time',
+        '[class*="time"]', '[class*="date"]',
+        'span.time', 'div.time', 'p.time',
+        '.meta .time', '.meta time', 'time',
+    ]
+    
+    for sel in time_selectors:
+        tag = soup.select_one(sel)
+        if tag:
+            text = tag.get_text(strip=True)
+            # 匹配时间格式 (2026-04-03 或 2026年04月03日 或 04-03 等)
+            if re.search(r'\d{4}|\d{2}[:\-]', text):
+                pub_time = text
+                break
+    
+    # 策略2: 从meta标签提取
+    if not pub_time:
+        meta_selectors = [
+            'meta[property="article:published_time"]',
+            'meta[name="publishdate"]',
+            'meta[name="PublishDate"]',
+            'meta[name="publishDate"]',
+            'meta[name="pubdate"]',
+            'meta[name="PubDate"]',
+        ]
+        for sel in meta_selectors:
+            tag = soup.select_one(sel)
+            if tag and tag.get('content'):
+                pub_time = tag['content'][:19]  # 只取前19个字符 (YYYY-MM-DD HH:MM:SS)
+                break
+    
+    # 策略3: 正则从HTML中提取
+    if not pub_time:
+        html = str(soup)
+        # 匹配常见时间格式
+        patterns = [
+            r'(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日\s]\d{1,2}:\d{1,2})',
+            r'(\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{1,2})',
+            r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, html)
+            if match:
+                pub_time = match.group(1)
+                break
+    
+    # 清理格式
+    if pub_time:
+        pub_time = re.sub(r'\s+', ' ', pub_time).strip()[:30]
+    
+    return pub_time
+
+
 def extract_content_and_time(url, selectors, referer):
     """提取正文和发布时间"""
     html = fetch(url, referer)
     if not html:
         return "", ""
+    
     soup = BeautifulSoup(html, 'lxml')
     
     # 提取正文
     content = ""
-    for sel in selectors['content']:
+    for sel in selectors.get('content', []):
         tag = soup.select_one(sel)
         if tag:
             text = tag.get_text(separator='\n', strip=True)
@@ -57,14 +119,7 @@ def extract_content_and_time(url, selectors, referer):
         content = '\n'.join([p.get_text(strip=True) for p in ps if len(p.get_text(strip=True)) > 20])[:8000]
     
     # 提取发布时间
-    pub_time = ""
-    for sel in selectors.get('time', []):
-        tag = soup.select_one(sel)
-        if tag:
-            pub_time = tag.get_text(strip=True)
-            # 清理时间格式
-            pub_time = re.sub(r'\s+', ' ', pub_time)
-            break
+    pub_time = extract_time(soup, url)
     
     return content, pub_time
 
@@ -101,8 +156,7 @@ def parse_news(url, referer, link_pattern, title_min_len=8, max_count=20):
 def crawl_eastmoney():
     news = parse_news("https://www.eastmoney.com/", "", r'/(a|news)/\d+')
     selectors = {
-        'content': ['#ContentBody', '.newsContent', '#newsContent', '.article-content'],
-        'time': ['.time', '.date', '.info-source .time', '.pub-time', '.news-source']
+        'content': ['#ContentBody', '.newsContent', '#newsContent', '.article-content', '.content'],
     }
     for n in news:
         n['source'] = '东方财富'
@@ -114,8 +168,7 @@ def crawl_sina():
     news = parse_news("https://finance.sina.com.cn/", "https://finance.sina.com.cn/",
         r'https?://finance\.sina\.com\.cn/.+/\d{4}-\d{2}-\d{2}/doc-[a-zA-Z0-9]+\.shtml')
     selectors = {
-        'content': ['#artibody', '.article', '#article_content'],
-        'time': ['.date', '.time', '.source', '#pub_date', '.article-info .date']
+        'content': ['#artibody', '.article', '#article_content', '.article-content'],
     }
     for n in news:
         n['source'] = '新浪财经'
@@ -126,8 +179,7 @@ def crawl_sina():
 def crawl_cls():
     news = parse_news("https://www.cls.cn/", "https://www.cls.cn/", r'/detail/\d+')
     selectors = {
-        'content': ['.content', '.article-content', '#content'],
-        'time': ['.time', '.date', '.article-time', '.pub-time']
+        'content': ['.content', '.article-content', '#content', '.detail-content'],
     }
     for n in news:
         n['source'] = '财联社'
@@ -181,7 +233,6 @@ def load_by_date(date_str=None):
                     all_news.extend(json.load(f))
             except:
                 pass
-    # 按发布时间排序（如果有）
     all_news.sort(key=lambda x: x.get('pub_time', ''), reverse=True)
     return all_news
 
