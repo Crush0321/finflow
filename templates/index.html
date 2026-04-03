@@ -13,6 +13,9 @@
         .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); transition: all 0.3s ease; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-push { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.3s ease; }
+        .btn-push:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); }
+        .btn-push:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .news-card { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; }
         .news-card:hover { background: rgba(30, 41, 59, 0.9); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
         .source-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; }
@@ -64,6 +67,11 @@
                     <button id="crawlBtn" onclick="startCrawl()" class="btn-primary px-5 py-2 rounded-lg font-medium flex items-center space-x-2">
                         <i class="fas fa-spider"></i>
                         <span>一键爬取</span>
+                    </button>
+                    
+                    <button id="pushBtn" onclick="startPush()" class="btn-push px-5 py-2 rounded-lg font-medium flex items-center space-x-2 text-white">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>推送日报</span>
                     </button>
                     
                     <button onclick="loadNews()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition flex items-center space-x-2">
@@ -300,6 +308,72 @@
                     <div class="glass-card rounded-xl p-12 text-center text-red-400">
                         <i class="fas fa-exclamation-circle text-3xl mb-4"></i>
                         <p>加载失败: ${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 推送日报
+        async function startPush() {
+            const btn = document.getElementById('pushBtn');
+            const statusMsg = document.getElementById('statusMessage');
+            
+            // 检查是否有数据
+            if (currentNews.length === 0) {
+                statusMsg.classList.remove('hidden');
+                statusMsg.innerHTML = `
+                    <div class="flex items-center text-yellow-400">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span>请先爬取新闻数据</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 禁用按钮，显示加载中
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner loading-spinner"></i><span>推送中...</span>';
+            statusMsg.classList.remove('hidden');
+            statusMsg.innerHTML = '<span class="text-blue-400"><i class="fas fa-spinner fa-spin mr-2"></i>正在生成AI日报并推送到企业微信，请稍候...</span>';
+            
+            try {
+                // 发送请求
+                const res = await fetch('/api/push', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await res.json();
+                
+                // 恢复按钮
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>推送日报</span>';
+                
+                if (data.success) {
+                    statusMsg.innerHTML = `
+                        <div class="flex items-center text-green-400">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span>${data.message}</span>
+                        </div>
+                        <div class="mt-2 p-3 bg-gray-800 rounded text-gray-300 text-xs">
+                            ${data.summary}
+                        </div>
+                    `;
+                } else {
+                    statusMsg.innerHTML = `
+                        <div class="flex items-center text-red-400">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span>推送失败: ${data.error}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>推送日报</span>';
+                statusMsg.innerHTML = `
+                    <div class="flex items-center text-red-400">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span>请求失败: ${err.message}</span>
                     </div>
                 `;
             }
