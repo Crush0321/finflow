@@ -16,18 +16,28 @@
         .btn-push { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.3s ease; }
         .btn-push:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); }
         .btn-push:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-trending { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); transition: all 0.3s ease; }
+        .btn-trending:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4); }
+        .btn-trending:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .news-card { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; }
         .news-card:hover { background: rgba(30, 41, 59, 0.9); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
         .source-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; }
         .source-eastmoney { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
         .source-sina { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
         .source-cls { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+        .source-36kr { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+        .source-jiemian { background: rgba(236, 72, 153, 0.2); color: #f9a8d4; }
+        .source-huxiu { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+        
         .loading-spinner { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .content-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .tab-active { background: rgba(59, 130, 246, 0.3); border-color: #3b82f6; color: #60a5fa; }
+        .tab-inactive { background: rgba(30, 41, 59, 0.5); border-color: transparent; color: #94a3b8; }
+        .tab-inactive:hover { background: rgba(59, 130, 246, 0.1); color: #cbd5e1; }
     </style>
 </head>
 <body>
@@ -52,46 +62,97 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- 模式切换标签 -->
+        <div class="glass-card rounded-xl p-2 mb-6">
+            <div class="flex space-x-2">
+                <button id="tabFinance" onclick="switchMode('finance')" class="tab-active flex-1 py-2 px-4 rounded-lg font-medium text-sm transition">
+                    <i class="fas fa-chart-bar mr-2"></i>财经资讯
+                </button>
+                <button id="tabTrending" onclick="switchMode('trending')" class="tab-inactive flex-1 py-2 px-4 rounded-lg font-medium text-sm transition">
+                    <i class="fas fa-fire mr-2"></i>消费趋势 <span class="text-xs opacity-70">(银发/单身)</span>
+                </button>
+            </div>
+        </div>
+
         <!-- 控制面板 -->
         <div class="glass-card rounded-xl p-6 mb-6">
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex flex-wrap items-center gap-3">
-                    <span class="text-sm text-gray-400 font-medium">数据源:</span>
-                    <select id="sourceSelect" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm">
-                        <option value="all">全部来源</option>
-                        <option value="eastmoney">东方财富</option>
-                        <option value="sina">新浪财经</option>
-                        <option value="cls">财联社</option>
-                    </select>
+                <div class="flex flex-col gap-3">
+                    <!-- 数据源选择 -->
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-400 font-medium">数据源:</span>
+                        <select id="sourceSelect" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm">
+                            <option value="all">全部来源</option>
+                            <optgroup label="财经媒体" id="financeGroup">
+                                <option value="eastmoney">东方财富</option>
+                                <option value="sina">新浪财经</option>
+                                <option value="cls">财联社</option>
+                            </optgroup>
+                            <optgroup label="消费趋势" id="trendingGroup">
+                                <option value="36kr">36氪</option>
+                                <option value="jiemian">界面新闻</option>
+                                
+                            </optgroup>
+                        </select>
+                    </div>
                     
-                    <button id="crawlBtn" onclick="startCrawl()" class="btn-primary px-5 py-2 rounded-lg font-medium flex items-center space-x-2">
-                        <i class="fas fa-spider"></i>
-                        <span>一键爬取</span>
-                    </button>
+                    <!-- 财经模式按钮 -->
+                    <div id="financeButtons" class="flex items-center gap-3">
+                        <button id="crawlBtn" onclick="startCrawl()" class="btn-primary px-5 py-2 rounded-lg font-medium flex items-center space-x-2">
+                            <i class="fas fa-spider"></i>
+                            <span>一键爬取</span>
+                        </button>
+                        
+                        <button id="pushBtn" onclick="startPush()" class="btn-push px-5 py-2 rounded-lg font-medium flex items-center space-x-2 text-white">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>推送日报</span>
+                        </button>
+                        
+                        <button onclick="loadNews()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition flex items-center space-x-2">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>刷新</span>
+                        </button>
+                    </div>
                     
-                    <button id="pushBtn" onclick="startPush()" class="btn-push px-5 py-2 rounded-lg font-medium flex items-center space-x-2 text-white">
-                        <i class="fas fa-paper-plane"></i>
-                        <span>推送日报</span>
-                    </button>
-                    
-                    <button onclick="loadNews()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition flex items-center space-x-2">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>刷新</span>
-                    </button>
+                    <!-- 趋势模式按钮 -->
+                    <div id="trendingButtons" class="hidden flex items-center gap-3">
+                        <button id="crawlTrendingBtn" onclick="startCrawlTrending()" class="btn-trending px-5 py-2 rounded-lg font-medium flex items-center space-x-2 text-white">
+                            <i class="fas fa-fire"></i>
+                            <span>爬取趋势</span>
+                        </button>
+                        
+                        <button id="pushTrendingBtn" onclick="startPushTrending()" class="btn-trending px-5 py-2 rounded-lg font-medium flex items-center space-x-2 text-white border border-amber-500/30">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>推送趋势日报</span>
+                        </button>
+                        
+                        <button onclick="loadNews()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition flex items-center space-x-2">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>刷新</span>
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="flex items-center gap-3">
-                    <select id="dateSelect" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm">
-                        {% for date in dates %}
-                        <option value="{{ date }}" {% if date == today %}selected{% endif %}>{{ date[:4] }}-{{ date[4:6] }}-{{ date[6:] }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="flex flex-col gap-3">
+                    <!-- 日期选择 -->
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-400 font-medium">日期:</span>
+                        <select id="dateSelect" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm w-40">
+                            {% for date in dates %}
+                            <option value="{{ date }}" {% if date == today %}selected{% endif %}>{{ date[:4] }}-{{ date[4:6] }}-{{ date[6:] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     
-                    <div class="relative">
-                        <input type="text" id="searchInput" placeholder="搜索关键词..." 
-                            class="bg-gray-800 border border-gray-600 rounded-lg pl-9 pr-4 py-2 text-sm w-48"
-                            onkeypress="if(event.key==='Enter') loadNews()">
-                        <i class="fas fa-search absolute left-3 top-2.5 text-gray-500"></i>
+                    <!-- 搜索框 -->
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-400 font-medium">搜索:</span>
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="搜索关键词..." 
+                                class="bg-gray-800 border border-gray-600 rounded-lg pl-9 pr-4 py-2 text-sm w-40"
+                                onkeypress="if(event.key==='Enter') loadNews()">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-500"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -100,8 +161,8 @@
             <div id="statusMessage" class="mt-4 text-sm hidden"></div>
         </div>
 
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- 统计卡片 - 财经模式 -->
+        <div id="financeStats" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="glass-card rounded-xl p-4">
                 <div class="flex items-center justify-between">
                     <div>
@@ -151,6 +212,57 @@
             </div>
         </div>
 
+        <!-- 统计卡片 - 趋势模式 -->
+        <div id="trendingStats" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 hidden">
+            <div class="glass-card rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-xs">趋势相关</p>
+                        <p id="statTrendingTotal" class="text-2xl font-bold text-white">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <i class="fas fa-fire text-amber-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-xs">36氪</p>
+                        <p id="stat36kr" class="text-2xl font-bold text-purple-400">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <i class="fas fa-rocket text-purple-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-xs">界面新闻</p>
+                        <p id="statJiemian" class="text-2xl font-bold text-pink-400">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                        <i class="fas fa-newspaper text-pink-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-xs">虎嗅</p>
+                        <p id="statHuxiu" class="text-2xl font-bold text-amber-400">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <i class="fas fa-eye text-amber-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 新闻列表 -->
         <div id="newsContainer" class="grid grid-cols-1 gap-4">
             <div class="glass-card rounded-xl p-12 text-center">
@@ -194,6 +306,49 @@
         document.getElementById('currentDate').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
         
         let currentNews = [];
+        let currentMode = 'finance';
+        
+        // 切换模式
+        function switchMode(mode) {
+            currentMode = mode;
+            const financeTab = document.getElementById('tabFinance');
+            const trendingTab = document.getElementById('tabTrending');
+            const financeButtons = document.getElementById('financeButtons');
+            const trendingButtons = document.getElementById('trendingButtons');
+            const financeStats = document.getElementById('financeStats');
+            const trendingStats = document.getElementById('trendingStats');
+            const financeGroup = document.getElementById('financeGroup');
+            const trendingGroup = document.getElementById('trendingGroup');
+            const sourceSelect = document.getElementById('sourceSelect');
+            
+            if (mode === 'finance') {
+                financeTab.className = 'tab-active flex-1 py-2 px-4 rounded-lg font-medium text-sm transition';
+                trendingTab.className = 'tab-inactive flex-1 py-2 px-4 rounded-lg font-medium text-sm transition';
+                financeButtons.classList.remove('hidden');
+                trendingButtons.classList.add('hidden');
+                financeStats.classList.remove('hidden');
+                trendingStats.classList.add('hidden');
+                
+                // 显示财经分组，隐藏趋势分组
+                financeGroup.style.display = '';
+                trendingGroup.style.display = 'none';
+            } else {
+                financeTab.className = 'tab-inactive flex-1 py-2 px-4 rounded-lg font-medium text-sm transition';
+                trendingTab.className = 'tab-active flex-1 py-2 px-4 rounded-lg font-medium text-sm transition';
+                financeButtons.classList.add('hidden');
+                trendingButtons.classList.remove('hidden');
+                financeStats.classList.add('hidden');
+                trendingStats.classList.remove('hidden');
+                
+                // 隐藏财经分组，显示趋势分组
+                financeGroup.style.display = 'none';
+                trendingGroup.style.display = '';
+            }
+            
+            // 重置数据源选择
+            sourceSelect.value = 'all';
+            loadNews();
+        }
         
         // 开始爬取（同步等待）
         async function startCrawl() {
@@ -252,6 +407,58 @@
             }
         }
         
+        // 爬取消费趋势
+        async function startCrawlTrending() {
+            const btn = document.getElementById('crawlTrendingBtn');
+            const statusMsg = document.getElementById('statusMessage');
+            
+            // 禁用按钮，显示加载中
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner loading-spinner"></i><span>爬取趋势中...</span>';
+            statusMsg.classList.remove('hidden');
+            statusMsg.innerHTML = '<span class="text-amber-400"><i class="fas fa-spinner fa-spin mr-2"></i>正在爬取消费趋势新闻（银发/单身经济）...</span>';
+            
+            try {
+                const res = await fetch('/api/crawl/trending', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await res.json();
+                
+                // 恢复按钮
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-fire"></i><span>爬取趋势</span>';
+                
+                if (data.success) {
+                    statusMsg.innerHTML = `
+                        <div class="flex items-center text-green-400">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span>${data.message}！共 ${data.total} 条新闻</span>
+                        </div>
+                    `;
+                    document.getElementById('dateSelect').value = new Date().toISOString().slice(0,10).replace(/-/g,'');
+                    loadNews();
+                } else {
+                    statusMsg.innerHTML = `
+                        <div class="flex items-center text-red-400">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span>爬取失败: ${data.error}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-fire"></i><span>爬取趋势</span>';
+                statusMsg.innerHTML = `
+                    <div class="flex items-center text-red-400">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span>请求失败: ${err.message}</span>
+                    </div>
+                `;
+            }
+        }
+        
         // 加载新闻列表
         async function loadNews() {
             const date = document.getElementById('dateSelect').value;
@@ -282,6 +489,7 @@
                         <div class="glass-card rounded-xl p-12 text-center">
                             <i class="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
                             <p class="text-gray-400">暂无数据</p>
+                            ${currentMode === 'trending' ? '<p class="text-gray-500 text-sm mt-2">消费趋势模式只显示银发经济/单身经济相关内容</p>' : ''}
                         </div>
                     `;
                 } else {
@@ -379,17 +587,104 @@
             }
         }
         
+        // 推送消费趋势日报
+        async function startPushTrending() {
+            const btn = document.getElementById('pushTrendingBtn');
+            const statusMsg = document.getElementById('statusMessage');
+            
+            // 检查是否有数据
+            if (currentNews.length === 0) {
+                statusMsg.classList.remove('hidden');
+                statusMsg.innerHTML = `
+                    <div class="flex items-center text-yellow-400">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span>请先爬取消费趋势新闻</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 禁用按钮，显示加载中
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner loading-spinner"></i><span>推送趋势日报...</span>';
+            statusMsg.classList.remove('hidden');
+            statusMsg.innerHTML = '<span class="text-amber-400"><i class="fas fa-spinner fa-spin mr-2"></i>正在生成消费趋势日报并推送...</span>';
+            
+            try {
+                const res = await fetch('/api/push/trending', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const data = await res.json();
+                
+                // 恢复按钮
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>推送趋势日报</span>';
+                
+                if (data.success) {
+                    statusMsg.innerHTML = `
+                        <div class="flex items-center text-green-400">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span>${data.message}</span>
+                        </div>
+                        <div class="mt-2 p-3 bg-gray-800 rounded text-gray-300 text-xs">
+                            ${data.summary}
+                        </div>
+                    `;
+                } else {
+                    statusMsg.innerHTML = `
+                        <div class="flex items-center text-red-400">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span>推送失败: ${data.error}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>推送趋势日报</span>';
+                statusMsg.innerHTML = `
+                    <div class="flex items-center text-red-400">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span>请求失败: ${err.message}</span>
+                    </div>
+                `;
+            }
+        }
+        
         // 更新统计
         function updateStats(news) {
+            // 财经统计
             document.getElementById('statTotal').textContent = news.length;
             document.getElementById('statEastmoney').textContent = news.filter(n => n.source === '东方财富').length;
             document.getElementById('statSina').textContent = news.filter(n => n.source === '新浪财经').length;
             document.getElementById('statCls').textContent = news.filter(n => n.source === '财联社').length;
+            
+            // 趋势统计
+            const trendingKeywords = ['银发', '养老', '老年', '老龄', '退休', '养老产业', '适老',
+                '单身', '独居', '一人经济', '单身经济', '独居生活', '一人食', '迷你',
+                '新消费', '消费趋势', '宠物经济', '情绪价值', '悦己消费'];
+            const trendingNews = news.filter(n => {
+                const text = (n.title + ' ' + n.content).toLowerCase();
+                return trendingKeywords.some(kw => text.includes(kw.toLowerCase()));
+            });
+            
+            document.getElementById('statTrendingTotal').textContent = trendingNews.length;
+            document.getElementById('stat36kr').textContent = news.filter(n => n.source === '36氪').length;
+            document.getElementById('statJiemian').textContent = news.filter(n => n.source === '界面新闻').length;
+            document.getElementById('statHuxiu').textContent = news.filter(n => n.source === '虎嗅').length;
         }
         
         // 获取来源样式
         function getSourceClass(source) {
-            const map = {'东方财富': 'eastmoney', '新浪财经': 'sina', '财联社': 'cls'};
+            const map = {
+                '东方财富': 'eastmoney', 
+                '新浪财经': 'sina', 
+                '财联社': 'cls',
+                '36氪': '36kr',
+                '界面新闻': 'jiemian',
+                '虎嗅': 'huxiu',
+            };
             return map[source] || 'eastmoney';
         }
         
@@ -425,7 +720,19 @@
         document.getElementById('dateSelect').addEventListener('change', loadNews);
         
         // 页面加载完成后加载数据
-        document.addEventListener('DOMContentLoaded', loadNews);
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化下拉框分组显示
+            const financeGroup = document.getElementById('financeGroup');
+            const trendingGroup = document.getElementById('trendingGroup');
+            if (currentMode === 'finance') {
+                financeGroup.style.display = '';
+                trendingGroup.style.display = 'none';
+            } else {
+                financeGroup.style.display = 'none';
+                trendingGroup.style.display = '';
+            }
+            loadNews();
+        });
     </script>
 </body>
 </html>

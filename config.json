@@ -1,11 +1,11 @@
 {
   "dashscope": {
-    "api_key": "YOUR_DASHSCOPE_API_KEY",
+    "api_key": "your-dashscope-api-key",
     "model": "qwen-turbo",
     "base_url": "https://dashscope.aliyuncs.com/api/v1"
   },
   "wechat": {
-    "webhook_url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_WEBHOOK_KEY",
+    "webhook_url": "your-wechat-webhook-url",
     "mentioned_list": [],
     "mentioned_mobile_list": []
   },

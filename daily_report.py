@@ -8,7 +8,9 @@ import json
 from datetime import datetime
 from typing import List, Dict
 
-from spider_api import crawl_eastmoney, crawl_sina, crawl_cls, save, load_by_date
+from spider_api import (crawl_eastmoney, crawl_sina, crawl_cls, 
+                        crawl_36kr, crawl_jiemian,
+                        save, load_by_date)
 from summarizer import QwenSummarizer
 from wechat_bot import WeChatBot
 
@@ -104,6 +106,27 @@ class DailyReport:
         if cls_news:
             save(cls_news, 'cls')
             all_news.extend(cls_news)
+        
+        # 36氪
+        print("  - 抓取36氪...")
+        kr_news = crawl_36kr()
+        if kr_news:
+            save(kr_news, '36kr')
+            all_news.extend(kr_news)
+        
+        # 界面新闻
+        print("  - 抓取界面新闻...")
+        jm_news = crawl_jiemian()
+        if jm_news:
+            save(jm_news, 'jiemian')
+            all_news.extend(jm_news)
+        
+        # 虎嗅
+        print("  - 抓取虎嗅...")
+        hx_news = crawl_huxiu()
+        if hx_news:
+            save(hx_news, 'huxiu')
+            all_news.extend(hx_news)
         
         return all_news
     
